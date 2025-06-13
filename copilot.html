@@ -101,8 +101,7 @@
 <body>
     
 <div class="main-wrapper">
-    <body>
-<div class="main-wrapper">
+  <div class="max-w-5xl bg-gray-800 p-6 rounded-2xl shadow-2xl">
   <div class="w-full flex justify-start mb-4">
     <button 
       onclick="location.reload()" 
@@ -110,8 +109,6 @@
       style="margin-top: 1rem; margin-left: 1rem;"
     >🏠 Home</button>
   </div>
-  <div class="max-w-5xl bg-gray-800 p-6 rounded-2xl shadow-2xl">
-  <div class="max-w-5xl bg-gray-800 p-6 rounded-2xl shadow-2xl">
     <h1 class="text-3xl font-bold text-center mb-6 animate-pulse">🎨 Image Compressor with Bulk Download</h1>
 
     <div class="flex justify-center gap-4 mb-6">
@@ -137,7 +134,7 @@
     <!-- Easy Mode -->
     <div id="easyMode" class="block text-center space-y-4">
       <label>🎚️ Quality: <span id="easyQualityVal">70%</span></label>
-      <input type="range" id="easyQuality" min="1" max="100" step="1" value="70" class="w-full max-w-xs mx-auto">
+      <input type="range" id="easyQuality" min="1" max="100" step="1" value="40" class="w-full max-w-xs mx-auto">
       <p class="filter-instruction">Click the buttons below to preview and apply filters to your image.</p>
       <div class="filter-container">
         <button class="filter-btn" data-filter="none">None</button>
@@ -175,7 +172,7 @@
         </div>
         <div>
           <label>🎚️ Quality: <span id="qualityValue">70%</span></label>
-          <input type="range" id="qualityRange" min="1" max="100" step="1" value="70" class="w-full">
+          <input type="range" id="qualityRange" min="1" max="100" step="1" value="40" class="w-full">
         </div>
       </div>
       <div>
@@ -366,9 +363,9 @@ function handleFiles(files) {
     handleFile(bulkFiles[0]);
     bulkList.innerHTML = "";
   } else {
-    bulkList.innerHTML = "Bulk files: " + bulkFiles.map(f => f.name).join(", ");
     activeFileIndex = 0;
     handleFile(bulkFiles[bulkFiles.length - 1]);
+    renderBulkList();
   }
   setTimeout(updateDownloadButtons, 300);
 }
@@ -460,6 +457,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (originalImage) compressNow();
   };
 });
+
+// Set default quality display to 40%
+easyQualityVal.textContent = "40%";
+qualityValue.textContent = "40%";
 
 function applyFilter(imageData, filter, strength) {
   if (!filter || filter === "none") return imageData;
@@ -736,29 +737,100 @@ function bulkDownload(mode) {
   }
   processFile(0);
 }
+
+function renderBulkList() {
+  if (bulkFiles.length <= 1) {
+    bulkList.innerHTML = "";
+    return;
+  }
+  bulkList.innerHTML = bulkFiles.map((f, idx) => {
+    const url = URL.createObjectURL(f);
+    return `<span style="display:inline-block;position:relative;margin:0 8px 8px 0;">
+      <img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #a78bfa;box-shadow:0 2px 8px #0002;vertical-align:middle;">
+      <button onclick="deleteBulkFile(${idx})" style="position:absolute;top:-8px;right:-8px;background:#f472b6;border:none;border-radius:50%;width:22px;height:22px;color:#fff;font-weight:bold;cursor:pointer;box-shadow:0 1px 4px #0003;">✖</button>
+      <div style='font-size:11px;color:#a78bfa;text-align:center;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>${f.name}</div>
+    </span>`;
+  }).join("");
+}
+
+function deleteBulkFile(idx) {
+  // Remove file and update previews
+  const wasCurrent = (bulkFiles[idx] === originalFile);
+  bulkFiles.splice(idx, 1);
+  if (bulkFiles.length === 0) {
+    originalFile = null;
+    originalImage = null;
+    fileNameDisplay.classList.add("hidden");
+    originalPreview.innerHTML = "";
+    compressedPreview.innerHTML = "";
+    easyOriginalPreview.innerHTML = "";
+    easyCompressedPreview.innerHTML = "";
+    easyEstimate.classList.add("hidden");
+    easyAiMessage.classList.add("hidden");
+    estimate.classList.add("hidden");
+    aiMessage.classList.add("hidden");
+    easyDownload.classList.add("hidden");
+    downloadBtn.classList.add("hidden");
+  } else {
+    // If deleted file was current, show next or previous
+    let nextIdx = idx;
+    if (nextIdx >= bulkFiles.length) nextIdx = bulkFiles.length - 1;
+    handleFile(bulkFiles[nextIdx]);
+  }
+  renderBulkList();
+  updateDownloadButtons();
+}
+
+// Patch handleFiles to call renderBulkList
+function handleFiles(files) {
+  const newFiles = Array.from(files);
+  newFiles.forEach(f => {
+    if (!bulkFiles.some(existing => existing.name === f.name && existing.size === f.size)) {
+      bulkFiles.push(f);
+    }
+  });
+  if (bulkFiles.length === 0) return;
+  if (bulkFiles.length === 1) {
+    handleFile(bulkFiles[0]);
+    bulkList.innerHTML = "";
+  } else {
+    activeFileIndex = 0;
+    handleFile(bulkFiles[bulkFiles.length - 1]);
+    renderBulkList();
+  }
+  setTimeout(updateDownloadButtons, 300);
+}
 </script>
 <!-- Add this just before </body> -->
 <div class="signature-container">
-  <span class="signature-text">&mdash; made with <span class="signature-highlight">shibbux</span></span>
+  <span class="signature-text">&mdash; made with <span class="signature-heart">❤</span> by <span class="signature-highlight">shibbux</span></span>
 </div>
 <link href="https://fonts.googleapis.com/css?family=Pacifico|Dancing+Script&display=swap" rel="stylesheet">
 <style>
   .signature-text {
     font-family: 'Pacifico', 'Dancing Script', cursive, sans-serif;
     font-size: 2rem;
-    background: linear-gradient(90deg, #a78bfa, #7c3aed 70%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 2px 2px 8px #4c1d9555;
+    color: #fff;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    -webkit-text-fill-color: initial;
+    text-shadow: 2px 2px 8px #00000033;
     letter-spacing: 2px;
     user-select: none;
     display: inline-block;
     padding-right: 0.5rem;
   }
   .signature-highlight {
-    color: #f472b6;
+    color: #fff;
     background: none;
-    -webkit-text-fill-color: #f472b6;
+    -webkit-text-fill-color: #fff;
+  }
+  .signature-heart {
+    color: #ff4d6d;
+    font-size: 1.2em;
+    vertical-align: middle;
+    margin: 0 0.2em;
   }
   @media (max-width: 640px) {
     .signature-text {
